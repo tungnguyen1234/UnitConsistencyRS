@@ -1,8 +1,15 @@
-# UC Benchmarking
+# Unit Consistency (UC) for Recommender Systems
 
-Evaluation suite for recommender systems comparing UC (Unit Consistency) against standard baselines on both **Kendall-tau rank consistency** and **standard ranking metrics** (Precision@k, Recall@k, NDCG@k).
+Code for the paper **"Unit Consistency: A Paradigm Shift for Recommender Systems —
+Rank-Preference Consistency as the Appropriate Metric for Recommender Systems"**.
 
-## Download Dataset
+This repository contains the UC implementation and evaluation scripts for three
+experiments described in the paper.  Baseline methods were run using RecBole
+[cite]; hyperparameter configurations are reported in Tables 15–18 of the paper.
+
+---
+
+## Download Data
 
 https://drive.google.com/drive/folders/116WrCmaHDyLox9KmL3-YL1GbGWmK-r8S?usp=sharing
 
@@ -16,234 +23,147 @@ data/
   Netflix/
 ```
 
+---
+
 ## Supported Datasets
 
 | Dataset | Users | Items | Notes |
 |---------|-------|-------|-------|
-| ML-100K | ~1K | ~1.7K | Small, fast |
-| ML-1M | ~6K | ~3.7K | Medium |
-| Douban_monti | ~3K | ~3.7K | Medium |
-| ML-20M | ~138K | ~27K | Large |
-| Netflix | ~440K | ~9K | Large, GPU memory constrained |
-
-## Supported Methods
-
-- **UC** — Unit Consistency (deterministic)
-- **TC** — Tensor Completion (deterministic)
-- **BPR-MF** — Bayesian Personalized Ranking with Matrix Factorization
-- **LightGCN** — Light Graph Convolutional Network (RecBole-GNN)
-- **SimGCL** — Simple Graph Contrastive Learning (RecBole-GNN)
-- **NGCF** — Neural Graph Collaborative Filtering (RecBole-GNN)
-- **NCF** — Neural Collaborative Filtering (RecBole)
-- **SGL** — Self-supervised Graph Learning (RecBole-GNN)
-- **NCL** — Neighborhood-enriched Contrastive Learning (RecBole-GNN)
-- **SimpleX** — Simple Contrastive Learning (RecBole)
-- **MCCLK** — Multi-Context Contrastive Learning for Knowledge Graphs (RecBole-GNN)
-- **fairGAN_tf** — FairGAN (TensorFlow implementation)
-
-## Per-Dataset Configs
-
-Model hyperparameters are stored as YAML files under `configs/recbole/{Dataset}/`:
-
-```
-configs/recbole/
-  ML-100K/
-    lightgcn_local.yaml
-    simgcl_local.yaml
-    bprmf_local.yaml
-    fairgan_local.yaml
-  ML-1M/
-    ...
-  Douban_monti/
-    ...
-  ML-20M/
-    ...
-  Netflix/
-    ...
-```
-
-Key differences by dataset size:
-- **ML-100K / ML-1M / Douban_monti**: `embedding_size=64`, `n_layers=3`, `batch_size=4096`
-- **ML-20M**: `embedding_size=32`, `n_layers=2`, `batch_size=8192`
-- **Netflix**: `embedding_size=16`, `n_layers=1`, `batch_size=24576` (fits 12GB GPU)
+| ML-100K | ~1 K | ~1.7 K | Small, fast |
+| ML-1M | ~6 K | ~3.7 K | Medium |
+| Douban_monti | ~3 K | ~3.7 K | Medium |
+| ML-20M | ~138 K | ~27 K | Large |
+| Netflix | ~440 K | ~9 K | Large, GPU memory constrained |
 
 ---
 
-## 1. Standard Ranking Evaluation
+## Repository Layout
 
-`run_standard_ranking_eval.py` — Main experiment script. Trains all specified methods and evaluates on Precision@k, Recall@k, NDCG@k, with optional Kendall-tau and CVR metrics.
-
-```bash
-# Basic: evaluate UC, BPR-MF, LightGCN on ML-1M
-python run_standard_ranking_eval.py --dataset ML-1M --methods UC BPR-MF LightGCN
-
-# Multiple seeds for mean/std
-python run_standard_ranking_eval.py --dataset ML-1M --methods UC BPR-MF LightGCN --random_state 0
-python run_standard_ranking_eval.py --dataset ML-1M --methods UC BPR-MF LightGCN --random_state 42
-
-# All methods on Netflix with UC metrics
-python run_standard_ranking_eval.py --dataset Netflix \
-  --methods UC BPR-MF LightGCN SimGCL fairGAN_tf \
-  --compute_uc_metrics --random_state 0
-
-# Custom k values and evaluation mode
-python run_standard_ranking_eval.py --dataset ML-1M \
-  --methods UC BPR-MF LightGCN \
-  --k_values 5 10 20 \
-  --eval_mode full_ranking
-
-# UC as a re-ranking module on top of base models
-python run_standard_ranking_eval.py --dataset ML-1M \
-  --methods UC BPR-MF LightGCN \
-  --use_uc_reranking --rerank_top_n 100
 ```
-
-**Key arguments:**
-
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--dataset` | ML-1M | ML-100K, ML-1M, ML-20M, Douban_monti, Netflix |
-| `--methods` | UC BPR-MF LightGCN | Methods to evaluate |
-| `--k_values` | 5 10 20 | K values for top-k metrics |
-| `--random_state` | 42 | Seed for reproducibility |
-| `--eval_mode` | rerank | rerank, full_ranking, negative_sampling |
-| `--rating_threshold` | 4.0 | Minimum rating as positive feedback |
-| `--compute_uc_metrics` | off | Compute CVR and Kendall-tau |
-| `--use_uc_reranking` | off | Evaluate UC as re-ranking module |
-| `--config_dir` | configs/recbole | Config directory for RecBole models |
-
-**Output:** Results are saved in `results/{Dataset}_standard_ranking_results/summary_seed_{seed}_{methods}.csv`.
+main.py                            # Unified experiment runner (all experiments)
+plot_ranksvd_metric_divergence.py  # Reproduce RankSVD RMSE vs ranking figure
+UCTC_algo.py                       # UC / TC dense algorithm
+UCTC_sparse.py                     # UC / TC sparse algorithm (large datasets)
+rankingSVD_algo.py                 # RankSVD baseline
+utils/
+  io.py                            # Logger, save_data, load_json
+  dataloader.py                    # Dense matrix data loaders (Exp 8)
+  experiment_utils.py              # UC runners + DataFrame data loaders (Exp 9)
+  preprocessing.py                 # Train/test splitting + Exp-8 sampling helpers
+  metric.py                        # Ranking metrics (P@k, R@k, NDCG@k), Kendall-tau
+  lazy_candidates.py               # Memory-efficient candidate generation
+  ranking_eval.py                  # Standard ranking evaluation pipeline (UC-only)
+```
 
 ---
 
-## 2. Aggregate Results
+## Running UC Experiments
 
-`graph_results.py` — Aggregates CSV results across seeds, produces mean/std summary tables and training time plots.
+All experiments are launched through `main.py`:
 
 ```bash
-# Single dataset
-python graph_results.py --dataset ML-1M
-
-# Filter to specific seeds
-python graph_results.py --dataset ML-1M --seeds 0 42
-
-# Multiple datasets (produces combined plots)
-python graph_results.py --dataset ML-1M ML-100K Douban_monti
-
-# Custom baseline for speedup plot
-python graph_results.py --dataset ML-1M --baseline LightGCN
+python main.py [--dataset DATASET] [--seed SEED] [--experiment EXP] [--output_dir DIR]
 ```
 
-**Key arguments:**
+| Argument | Default | Options | Description |
+|----------|---------|---------|-------------|
+| `--dataset` | `ML-1M` | ML-100K, ML-1M, Douban_monti, ML-20M, Netflix | Dataset to use |
+| `--seed` | `42` | any int | Random seed |
+| `--experiment` | `9` | `8`, `9`, `ranking` | Experiment type |
+| `--output_dir` | `results` | any path | Output directory |
+| `--data_path` | *(from paths.json or `data/`)* | any path | Root data directory |
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--dataset` | ML-1M | One or more dataset names |
-| `--seeds` | all found | Filter to specific seeds |
-| `--results_dir` | results | Root results directory |
-| `--baseline` | UC | Baseline method for speedup normalization |
+### Experiment 8 — All-Items Rank-Preference Consistency
 
-**Output:**
-- `results/{Dataset}_standard_ranking_results/mean_std_summary.csv` — Mean +/- std table
-- `results/{Dataset}_standard_ranking_results/training_time_log.png` — Log-scale training time plot
-- `results/{Dataset}_standard_ranking_results/training_time_speedup.png` — Relative speedup plot
-- If multiple datasets: `results/training_time_log_combined.png` and `results/training_time_speedup_combined.png`
-
----
-
-## 3. Convert to LaTeX
-
-`convert_latex.py` — Converts the `mean_std_summary.csv` from step 2 into publication-ready LaTeX tables with bold best values.
+Tests UC on **all items** for strong preferences (1 vs 5 ratings) and subtle
+preferences (4 vs 5 ratings).
 
 ```bash
-# Single dataset
-python convert_latex.py --dataset ML-1M
+# Single seed
+python main.py --dataset ML-1M   --seed 42 --experiment 8 --output_dir results
 
-# Multiple datasets
-python convert_latex.py --dataset ML-1M ML-100K Douban_monti
-
-# Save all tables to one file
-python convert_latex.py --dataset ML-1M ML-100K --output tables.tex
-```
-
-**Key arguments:**
-
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--dataset` | ML-1M | One or more dataset names |
-| `--results_dir` | results | Root results directory |
-| `--output` | stdout + per-dataset | Optional single output .tex file |
-
-**Output:** `results/{Dataset}_standard_ranking_results/results_table.tex`
-
----
-
-## 4. Hyperparameter Tuning
-
-`run_hyperparam_tuning.py` — Grid search over hyperparameters for LightGCN, SimGCL, and FairGAN with reduced epochs. Uses constrained grids for large datasets (ML-20M, Netflix).
-
-```bash
-# Tune LightGCN on Netflix
-python run_hyperparam_tuning.py --dataset Netflix --methods LightGCN
-
-# Tune all methods on ML-1M
-python run_hyperparam_tuning.py --dataset ML-1M --methods LightGCN SimGCL fairGAN_tf --tune_epochs 15
-
-# Custom epoch budget
-python run_hyperparam_tuning.py --dataset Netflix --methods SimGCL --tune_epochs 15
-```
-
-**Key arguments:**
-
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--dataset` | required | Dataset name |
-| `--methods` | required | LightGCN, SimGCL, fairGAN_tf |
-| `--tune_epochs` | 10 | Max epochs per trial |
-| `--data_path` | data | Path to data directory |
-| `--batch_size` | auto | Override batch size for RecBole models |
-| `--output_dir` | tuning_results | Directory to save result CSVs |
-
-**Output:** `tuning_results/{Method}_{Dataset}_tuning.csv` — Sorted by best metric (Recall@10 for RecBole models, Coverage for FairGAN). Update the YAML configs in `configs/recbole/{Dataset}/` with the best values.
-
----
-
-## Typical Workflow
-
-```bash
-# 1. Run experiments with multiple seeds
-for seed in 0 42 123; do
-  python run_standard_ranking_eval.py --dataset ML-1M \
-    --methods UC BPR-MF LightGCN SimGCL fairGAN_tf \
-    --compute_uc_metrics --random_state $seed
+# Multiple seeds (recommended: S=10 for small, S=5 for large datasets)
+for seed in 0 42 123 456 789 1000 2000 3000 4000 5000; do
+  python main.py --dataset ML-1M --seed $seed --experiment 8 --output_dir results
 done
-
-# 2. Aggregate results
-python graph_results.py --dataset ML-1M
-
-# 3. Generate LaTeX table
-python convert_latex.py --dataset ML-1M
 ```
+
+### Experiment 9 — Long-Tail Rank-Preference Consistency
+
+Tests UC on the **least-frequently rated 67% of items** for both strong and
+subtle preferences.
+
+```bash
+# Single seed
+python main.py --dataset ML-1M   --seed 42 --experiment 9 --output_dir results
+
+# Multiple seeds
+for seed in 0 42 123 456 789; do
+  python main.py --dataset Netflix --seed $seed --experiment 9 --output_dir results
+done
+```
+
+### Standard Ranking Evaluation (Precision@k, Recall@k, NDCG@k)
+
+Follows the standard implicit-feedback protocol: ratings ≥ 4.0 as positive,
+80/20 per-user random split, full-ranking protocol.
+
+```bash
+python main.py --dataset ML-1M  --seed 42  --experiment ranking --output_dir results
+python main.py --dataset ML-20M --seed 0   --experiment ranking --output_dir results
+```
+
+Results are saved to `results/{dataset}_ranking_results/summary_seed_{seed}.csv`.
+
+---
+
+## Reproducing the RankSVD Figure
+
+The figure showing RMSE, NDCG@10, and NDCG@20 for RankSVD across values of *k*
+on ML-1M can be reproduced with:
+
+```bash
+python plot_ranksvd_metric_divergence.py --dataset ML-1M
+```
+
+Optional arguments:
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--dataset` | `ML-1M` | ML-100K or ML-1M |
+| `--k_min` | `1` | Minimum k |
+| `--k_max` | `100` | Maximum k |
+| `--k_step` | `2` | Step between k values |
+| `--data_path` | `data` | Root data directory |
+| `--output_dir` | `results/experiment_1` | Output directory |
+
+Output plots are saved to `results/experiment_1/`:
+- `experiment_1_{dataset}_combined.png` — dual-axis RMSE vs NDCG (paper figure)
+- `experiment_1_{dataset}_rmse_vs_k.png`
+- `experiment_1_{dataset}_ndcg_vs_k.png`
+- `experiment_1_{dataset}_sidebyside.png`
+
+---
 
 ## Requirements
 
 - Python 3.8+
-- PyTorch
-- RecBole + RecBole-GNN (for LightGCN, SimGCL, NGCF, etc.)
-- TensorFlow (for FairGAN)
-- NumPy, SciPy, Pandas, Matplotlib
+- PyTorch (with optional CUDA)
+- NumPy, SciPy, Pandas, Matplotlib, scikit-learn, h5py
 
 ```bash
-pip install recbole recbole-gnn torch tensorflow numpy scipy pandas matplotlib pyyaml
+pip install torch numpy scipy pandas matplotlib scikit-learn h5py
 ```
+
+---
 
 ## Troubleshooting
 
-**Out of Memory (GPU):** Reduce `embedding_size`, `n_layers`, or increase `batch_size` in the dataset-specific YAML config. Netflix configs are already tuned for 12GB GPUs.
+**Out of GPU memory:** For ML-20M or Netflix, reduce batch sizes or switch to a
+CPU run by setting `CUDA_VISIBLE_DEVICES=""`.
 
-**FairGAN crash at epoch 70-80 (Netflix):** TensorFlow accumulates system RAM over many epochs. The Netflix FairGAN config uses 40 epochs to avoid this. If it still crashes, reduce `epochs` further in `configs/recbole/Netflix/fairgan_local.yaml`.
-
-**RecBole import errors:**
-```bash
-pip install recbole recbole-gnn
+**`paths.json` not found:** Either create a `paths.json` file:
+```json
+{ "data_path": "/path/to/your/data" }
 ```
+or pass `--data_path /path/to/your/data` directly on the command line.

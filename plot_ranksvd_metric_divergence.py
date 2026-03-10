@@ -1,18 +1,27 @@
 """
-Experiment 1: RankSVD — RMSE vs Ranking Metrics across k
+Reproduce Figure: RankSVD RMSE vs Ranking Metrics across k
 
-This experiment addresses ACM reviewer concerns by:
-1. Clearly specifying: Model (RankSVD), Dataset (ML-1M), Split protocol (80/20 random)
-2. Showing that RMSE-optimal k does NOT align with ranking-optimal k (overfitting)
-3. Providing side-by-side comparison of RMSE and NDCG@10 vs k
+Reproduces the figure showing RMSE, NDCG@10, and NDCG@20 for RankSVD
+across values of k on ML-1M (or ML-100K).  RMSE decreases to a minimum
+at k=31 and then increases steadily, while both NDCG curves peak at k=33
+and then also decrease.
 
-Key insight: The k that minimizes RMSE on held-out ratings may not maximize
-ranking metrics. This is consistent with the overfitting phenomenon where
-models optimized for rating prediction may not generalize to ranking tasks.
+Two key observations:
+1. All three metrics achieve their optima at *different* values of k —
+   tuning k to minimise RMSE does not simultaneously optimise rank-order
+   quality at any cutoff.
+2. For k < 31, RMSE improves while both NDCG curves are still rising,
+   confirming that RMSE improvement does not imply rank-order improvement,
+   and vice versa.
+
+SVD-based systems in the literature select k at the RMSE minimum, but
+this figure shows that choice has no principled justification in terms of
+ranking performance.
 
 Usage:
-    python experimental_1.py --dataset ML-1M
-    python experimental_1.py --dataset ML-1M --k_max 150 --k_step 5
+    python plot_ranksvd_metric_divergence.py --dataset ML-1M
+    python plot_ranksvd_metric_divergence.py --dataset ML-1M --k_max 150 --k_step 5
+    python plot_ranksvd_metric_divergence.py --dataset ML-100K --output_dir results/figures
 """
 
 import argparse
@@ -440,7 +449,7 @@ def create_plots(df, dataset_name, output_dir='results'):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Experiment 1: RankSVD RMSE vs Ranking Metrics'
+        description='Reproduce RankSVD RMSE vs Ranking Metrics figure (metric divergence across k)'
     )
     parser.add_argument('--dataset', type=str, default='ML-1M',
                         choices=['ML-100K', 'ML-1M'],
