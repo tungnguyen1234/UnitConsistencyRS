@@ -124,7 +124,7 @@ def load_matrix_exp8(dataset, data_path, seed):
 def run_experiment_8(dataset, data_path, seed, output_dir, logger):
     """
     Evaluate UC on all items for both strong (1 vs 5) and subtle (4 vs 5) preferences.
-    Iterates over S seeds; S=10 for easy datasets, S=5 for hard datasets.
+    Iterates over S seeds; S=10.
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(seed)
