@@ -62,58 +62,48 @@ utils/
 All experiments are launched through `main.py`:
 
 ```bash
-python main.py [--dataset DATASET] [--seed SEED] [--experiment EXP] [--output_dir DIR]
+python main.py --dataset DATASET --seed SEED --experiment EXP [--output_dir DIR] [--data_path PATH]
 ```
 
 | Argument | Default | Options | Description |
 |----------|---------|---------|-------------|
-| `--dataset` | `ML-1M` | ML-100K, ML-1M, Douban_monti, ML-20M, Netflix | Dataset to use |
+| `--dataset` | `ML-1M` | ML-100K, ML-1M, Douban_monti, ML-20M, Netflix | Dataset |
 | `--seed` | `42` | any int | Random seed |
-| `--experiment` | `9` | `8`, `9`, `ranking` | Experiment type |
+| `--experiment` | `long_tail` | `strong_and_subtle`, `long_tail`, `ranking` | Experiment type |
 | `--output_dir` | `results` | any path | Output directory |
-| `--data_path` | *(from paths.json or `data/`)* | any path | Root data directory |
+| `--data_path` | *(paths.json or `data/`)* | any path | Root data directory |
 
-### Experiment 8 — All-Items Rank-Preference Consistency
+### `strong_and_subtle` — All-Items Rank-Preference Consistency
 
-Tests UC on **all items** for strong preferences (1 vs 5 ratings) and subtle
-preferences (4 vs 5 ratings).
+UC evaluated on all items for strong (1 vs 5) and subtle (4 vs 5) preference pairs.
 
 ```bash
-# Single seed
-python main.py --dataset ML-1M   --seed 42 --experiment 8 --output_dir results
-
-# Multiple seeds (recommended: S=10 for small, S=5 for large datasets)
+# Multiple seeds (S=10 small datasets, S=5 large datasets)
 for seed in 0 42 123 456 789 1000 2000 3000 4000 5000; do
-  python main.py --dataset ML-1M --seed $seed --experiment 8 --output_dir results
+  python main.py --dataset ML-1M --seed $seed --experiment strong_and_subtle
 done
 ```
 
-### Experiment 9 — Long-Tail Rank-Preference Consistency
+### `long_tail` — Long-Tail Rank-Preference Consistency
 
-Tests UC on the **least-frequently rated 67% of items** for both strong and
-subtle preferences.
+UC evaluated on the least-frequently rated 67% of items, same preference pairs.
 
 ```bash
-# Single seed
-python main.py --dataset ML-1M   --seed 42 --experiment 9 --output_dir results
-
-# Multiple seeds
 for seed in 0 42 123 456 789; do
-  python main.py --dataset Netflix --seed $seed --experiment 9 --output_dir results
+  python main.py --dataset Netflix --seed $seed --experiment long_tail
 done
 ```
 
-### Standard Ranking Evaluation (Precision@k, Recall@k, NDCG@k)
+### `ranking` — Standard Ranking Evaluation (P@k, R@k, NDCG@k)
 
-Follows the standard implicit-feedback protocol: ratings ≥ 4.0 as positive,
-80/20 per-user random split, full-ranking protocol.
+Ratings ≥ 4.0 as positive, 80/20 per-user random split, full-ranking protocol.
 
 ```bash
-python main.py --dataset ML-1M  --seed 42  --experiment ranking --output_dir results
-python main.py --dataset ML-20M --seed 0   --experiment ranking --output_dir results
+python main.py --dataset ML-1M  --seed 42 --experiment ranking
+python main.py --dataset ML-20M --seed 0  --experiment ranking
 ```
 
-Results are saved to `results/{dataset}_ranking_results/summary_seed_{seed}.csv`.
+Results → `results/{dataset}_ranking_results/summary_seed_{seed}.csv`.
 
 ---
 
