@@ -1,16 +1,18 @@
 import sys
-import logging
+import os
+import json
 from datetime import datetime
-import os, json
+
 
 def save_data(json_file_path, data):
     with open(json_file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
+
 def load_json(path: str):
     """
-    Load a JSON configuration file with cross-platform (universal) path support.
-    Expands '~' and environment variables, and normalizes separators for Windows/WSL/Linux.
+    Load a JSON configuration file with cross-platform path support.
+    Expands '~' and environment variables, and normalizes separators.
 
     Args:
         path (str): Path to the JSON config file.
@@ -28,15 +30,16 @@ def load_json(path: str):
 
     return data
 
+
 class Logger:
     def __init__(self, log_file_path):
+        os.makedirs(os.path.dirname(log_file_path) if os.path.dirname(log_file_path) else '.', exist_ok=True)
         self.log_file = open(log_file_path, 'a', encoding='utf-8', buffering=1)
         self.original_stdout = sys.stdout
         sys.stdout = self
         self.log_file_path = log_file_path
 
     def write(self, message):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.log_file.write(message)
         self.original_stdout.write(message)
         self.flush()

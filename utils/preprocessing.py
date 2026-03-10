@@ -372,5 +372,153 @@ def create_negative_sampling_candidates(train_matrix, test_matrix, n_users, n_it
     
     print(f'Negative sampling candidates created in {time() - tic:.2f} seconds')
     print(f'Average candidates per user: {sum(len(v) for v in negative_sampling_candidates.values()) / len(negative_sampling_candidates):.1f}')
-    
+
     return negative_sampling_candidates
+
+
+# ---------------------------------------------------------------------------
+# Experiment 8 helpers — dense (easy datasets)
+# ---------------------------------------------------------------------------
+
+def get_list_by_indices(user, train_r, ratings=[1, 5]):
+    """For a given user column, find one item per rating value."""
+    indices = []
+    for j in ratings:
+        matched_indices = np.where(train_r.T[user] == j)[0]
+        if matched_indices.size > 0:
+            chosen_index = np.random.choice(matched_indices)
+            indices.append(chosen_index)
+    if len(set(indices)) == len(ratings):
+        return indices
+    return []
+
+
+def sample_products_all_users_by_indices(train_r, ratings=[1, 5], users=None):
+    """
+    For each user, sample one item per rating value; zero those out to form
+    the training split and return test samples.
+
+    Returns:
+        train_r_filtered, train_r_N_filtered, train_m_N, filtered_rows
+    """
+    n_m, n_u = train_r.shape
+    if users is None:
+        users = range(n_u)
+
+    train_r_N = np.copy(train_r)
+    rows = {}
+
+    for user in users:
+        sampled_indices = get_list_by_indices(user, train_r, ratings)
+        sampled_indices = np.array(sampled_indices)
+        if sampled_indices.size > 0:
+            train_r_N.T[user, sampled_indices] = 0
+        rows[user] = sampled_indices
+
+    non_zero_row_mask = ~np.all(train_r_N == 0, axis=1)
+    train_r_N_filtered = train_r_N[non_zero_row_mask]
+    train_r_filtered = train_r[non_zero_row_mask]
+
+    row_mapping = np.where(non_zero_row_mask)[0]
+    filtered_rows = {}
+    for user, indices in rows.items():
+        filtered_indices = [
+            row_mapping.tolist().index(idx) for idx in indices if idx in row_mapping
+        ]
+        filtered_rows[user] = filtered_indices
+
+    train_m_N = np.greater(train_r_N_filtered, 1e-12).astype('float32')
+    return train_r_filtered, train_r_N_filtered, train_m_N, filtered_rows
+
+
+def get_users_from_indices(arr, ratings):
+    """Filter users (columns) that contain all values in `ratings`."""
+    target_set = set([0] + ratings)
+    valid_columns_indices = np.array([
+        col for col in range(arr.shape[1])
+        if target_set.issubset(set(arr[:, col]))
+    ])
+    relevant_arr = arr[:, valid_columns_indices]
+    rows_with_nonzeros = np.any(relevant_arr != 0, axis=1)
+    cols_with_nonzeros = np.any(relevant_arr != 0, axis=0)
+    return relevant_arr[np.ix_(rows_with_nonzeros, cols_with_nonzeros)]
+
+
+# ---------------------------------------------------------------------------
+# Experiment 8 helpers — sparse (hard datasets)
+# ---------------------------------------------------------------------------
+
+def sample_products_all_users_by_indices_sparse(train_r, ratings, users=None):
+    """
+    Sparse version of sample_products_all_users_by_indices for large datasets.
+
+    Returns:
+        train_r_filtered, train_r_N_filtered, train_m_N, filtered_rows
+    """
+    n_m, n_u = train_r.shape
+    tic = time()
+    if users is None:
+        users = np.arange(n_u)
+
+    train_r_coo = train_r.tocoo()
+    ratings_mask = np.isin(train_r_coo.data, ratings)
+    row_indices = train_r_coo.row[ratings_mask]
+    col_indices = train_r_coo.col[ratings_mask]
+    data_values = train_r_coo.data[ratings_mask]
+
+    data = pd.DataFrame({'user': col_indices, 'item': row_indices, 'rating': data_values})
+    grouped = data.groupby(['user', 'rating'])['item'].apply(list).reset_index()
+    grouped['sampled_item'] = grouped['item'].apply(np.random.choice)
+    sampled_pivot = grouped.pivot(index='user', columns='rating', values='sampled_item')
+
+    def _get_sampled_items(row):
+        return [row.get(r) for r in ratings if not pd.isnull(row.get(r))]
+
+    sampled_indices_dict = sampled_pivot.apply(_get_sampled_items, axis=1).to_dict()
+    sampled_indices_dict = {
+        u: [item for item in items if item is not None]
+        for u, items in sampled_indices_dict.items()
+    }
+
+    train_r_N = train_r.tolil()
+    for user, sampled in sampled_indices_dict.items():
+        train_r_N[sampled, user] = 0
+    train_r_N = train_r_N.tocsr()
+    train_r_N.eliminate_zeros()
+
+    non_zero_row_mask = np.diff(train_r_N.indptr) > 0
+    train_r_N_filtered = train_r_N[non_zero_row_mask]
+    train_r_filtered = train_r[non_zero_row_mask]
+
+    row_mapping = np.where(non_zero_row_mask)[0]
+    row_mapping_series = pd.Series(data=np.arange(len(row_mapping)), index=row_mapping)
+    filtered_rows = {}
+    for user, indices in sampled_indices_dict.items():
+        indices_series = pd.Index(indices)
+        filtered_indices = (
+            row_mapping_series.reindex(indices_series).dropna().astype(int).tolist()
+        )
+        filtered_rows[user] = filtered_indices
+
+    train_m_N = sparse.csr_matrix(train_r_N_filtered)
+    train_m_N.data = np.ones_like(train_m_N.data)
+
+    print(f'sparse sampling done in {time() - tic:.2f}s')
+    return train_r_filtered, train_r_N_filtered, train_m_N, filtered_rows
+
+
+def get_users_from_indices_sparse(arr, ratings):
+    """Filter sparse matrix columns that contain all values in `ratings`."""
+    target_set = set(ratings)
+    arr_csc = arr.tocsc()
+    valid_cols = []
+    for col in range(arr_csc.shape[1]):
+        col_data = set(arr_csc.getcol(col).data.tolist())
+        if target_set.issubset(col_data):
+            valid_cols.append(col)
+    valid_cols = np.array(valid_cols)
+    if len(valid_cols) == 0:
+        return arr[:, []]
+    filtered = arr_csc[:, valid_cols].tocsr()
+    non_zero_rows = np.diff(filtered.tocsr().indptr) > 0
+    return filtered[non_zero_rows]
