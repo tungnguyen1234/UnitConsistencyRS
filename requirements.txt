@@ -1,0 +1,29 @@
+h5py
+keras
+numpy
+pandas
+pillow
+plotly
+pyarrow
+pydantic
+pydantic_core
+pynvml
+recbole
+scikit-learn
+scipy
+tensorflow
+tqdm
+triton
+xgboost
+torch==2.8.0
+psutil
+kmeans_pytorch
+torch_geometric
+matplotlib
+seaborn
+# torch_scatter installation (REQUIRES matching CUDA version):
+# For CUDA 11.8: pip install torch_scatter -f https://data.pyg.org/whl/torch-2.8.0+cu118.html
+# For CUDA 12.1: pip install torch_scatter -f https://data.pyg.org/whl/torch-2.8.0+cu121.html
+# For CUDA 12.4: pip install torch_scatter -f https://data.pyg.org/whl/torch-2.8.0+cu124.html
+# For CPU only:  pip install torch_scatter -f https://data.pyg.org/whl/torch-2.8.0+cpu.html
+# OR run: bash fix_torch_scatter_cuda.sh (auto-detects CUDA version)
