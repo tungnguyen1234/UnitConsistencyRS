@@ -104,7 +104,7 @@ def run_SVD_ranking_easy(n_u, n_m, r_train, test_r, percents, samples_products, 
     return hash_SVD
 
 
-def run_SVD_ranking_hard(n_u, n_m, r_train, test_r, percents, samples_products, n_bootstrap=1000):
+def run_SVD_ranking_hard(n_u, n_m, r_train, test_r, percents, samples_products, device, n_bootstrap=1000):
     if sparse.issparse(r_train):
         coo = r_train.tocoo().T
         i = torch.LongTensor(np.vstack((coo.row, coo.col)))
