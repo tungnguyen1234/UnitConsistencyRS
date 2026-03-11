@@ -4,7 +4,7 @@ Standard Ranking Evaluation for UC (Unit Consistency).
 Evaluates UC on Precision@k, Recall@k, and NDCG@k using a standard
 80/20 per-user random train/test split and full-ranking protocol.
 
-Only UC method are evaluated here. Baseline methods were run using
+Only UC is evaluated here. Baseline methods were run using
 RecBole; hyperparameter configurations are reported in Tables 15-18 of
 the paper.
 """
