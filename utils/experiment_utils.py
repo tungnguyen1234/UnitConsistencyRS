@@ -76,7 +76,6 @@ def run_UC_easy(n_u, r_train, test_r, samples_products, device, epsilon=1e-9):
     latent_1_UC, latent_2_UC = UC.UC()
     latent_1_UC = latent_1_UC.float().cpu().detach().numpy()
     latent_2_UC = latent_2_UC.float().cpu().detach().numpy()
-
     macro_scores = calculate_scores_UC(
         n_u, test_r.T, latent_1_UC, latent_2_UC, samples_products, method='UC'
     )

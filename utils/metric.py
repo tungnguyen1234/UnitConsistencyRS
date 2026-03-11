@@ -3,10 +3,6 @@ import numpy as np
 from time import time
 from scipy import sparse
 
-
-test_values = np.array([1.0, 1.0])
-
-
 def kendall_tau_distance_two_elements(ground_truth, prediction):
     """
     Compute the normalized Kendall tau distance for two elements.
@@ -79,8 +75,7 @@ def calculate_scores_vectorized(n_u, test_r, samples_products, method=None, batc
 
             # Compute predictions based on the selected method
             if method == "UC":
-                # pre_N = latent_1[user] * latent_2[samples_products_np]
-                pre_N = test_values
+                pre_N = latent_1[user] * latent_2[samples_products_np]
             elif method == "rankSVD":
                 pre_N = (r_train[user] @ Q_side_result)
                 pre_N = pre_N[samples_products_np].detach().cpu().to_dense()
@@ -164,8 +159,7 @@ def calculate_scores_UC(n_u, test_r, latent_1, latent_2, samples_products, metho
             test_r_N = test_r[user, samples_products_np]
         
         if method == "UC":
-            # pre_N = (latent_1[user, None] * latent_2[None, samples_products_np]).flatten()
-            pre_N = test_values
+            pre_N = (latent_1[user, None] * latent_2[None, samples_products_np]).flatten()
 
         if pre_N[0] == pre_N[1]:
             count += 1
