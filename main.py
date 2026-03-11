@@ -41,7 +41,7 @@ from scipy import sparse
 
 from utils import (
     Logger, save_data, load_json,
-    run_UC_TC_easy, run_UC_TC_hard,
+    run_UC_easy, run_UC_hard,
     preprocess_data, train_test_split,
     load_data_ML100K_exp_9, load_data_ML1M_exp_9,
     load_data_ML20M_exp_9, load_data_monti_exp_9, load_data_Netflix_exp_9,
@@ -108,7 +108,7 @@ def run_strong_and_subtle(dataset, data_path, seed, output_dir, logger):
             n_m2, n_u2 = train_r_curr.shape
             r_train = torch.tensor(train_r_N).to(device)
             test_r = train_r_curr - train_r_N
-            result = run_UC_TC_easy(n_u2, r_train, test_r, samples_products, device)
+            result = run_UC_easy(n_u2, r_train, test_r, samples_products, device)
             path = os.path.join(output_dir, dataset,
                                 f'strong_and_subtle_{ratings}_{dataset}_seed{seed}_UC.json')
             save_data(path, result)
@@ -158,10 +158,10 @@ def run_long_tail(dataset, data_path, seed, output_dir, logger):
 
         if mode == "easy":
             r_train = torch.tensor(train_r).to(device)
-            result = run_UC_TC_easy(n_u, r_train, test_r, samples_products, device)
+            result = run_UC_easy(n_u, r_train, test_r, samples_products, device)
             del r_train
         else:
-            result = run_UC_TC_hard(n_u, train_r, test_r, samples_products, device)
+            result = run_UC_hard(n_u, train_r, test_r, samples_products, device)
 
         path = os.path.join(output_dir, dataset,
                             f'long_tail_{pairs}_{dataset}_seed{seed}_UC.json')
@@ -183,7 +183,7 @@ def run_ranking(dataset, data_path, seed, output_dir, logger):
     run_uc_ranking_evaluation(
         dataset_name=dataset,
         ratings=ratings,
-        methods=['UC', 'TC'],
+        methods=['UC'],
         k_values=[5, 10, 20],
         random_state=seed,
         logger=logger,

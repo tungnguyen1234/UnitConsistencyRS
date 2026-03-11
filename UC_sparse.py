@@ -22,62 +22,6 @@ def gpu_usage():
 device = t.device(f"cuda:0" if t.cuda.is_available() else "cpu")
 epsilon = 1e-9
 
-class SparseTC:
-    def __init__(self, device, tensor, epsilon, mode_full=True):
-        self.device = device
-        if tensor.is_sparse:
-            self.tensor = tensor.coalesce().to(device)
-        else:
-            self.tensor = tensor.to_sparse().coalesce().to(device)
-        self.epsilon = epsilon
-        self.mode_full=  mode_full
-
-    def TC(self):
-        indices = self.tensor.indices()
-        values = self.tensor.values().float()
-        d1, d2 = self.tensor.size()
-
-        self.sigma_first = t.bincount(indices[0], minlength=d1).to(self.device)
-        self.sigma_second = t.bincount(indices[1], minlength=d2).to(self.device)
-
-        self.latent_1 = t.zeros(d1, device=self.device)
-        self.latent_2 = t.zeros(d2, device=self.device)
-
-        errors = []
-        step = 1
-
-        while True:
-            rho_first = -t.zeros(d1, device=self.device).index_add_(0, indices[0], values).div_(self.sigma_first).nan_to_num(0.0)
-            values.add_(rho_first[indices[0]])
-            self.latent_1.sub_(rho_first)
-            error = rho_first.pow(2).sum()
-
-            rho_second = -t.zeros(d2, device=self.device).index_add_(0, indices[1], values).div_(self.sigma_second).nan_to_num(0.0)
-            values.add_(rho_second[indices[1]])
-            self.latent_2.sub_(rho_second)
-            error += rho_second.pow(2).sum()
-            errors.append(float(error))
-            step += 1
-
-            if step % 5 == 0:  # Print every 10 steps
-                print(f"Step {step}:")
-                # print_memory_usage()
-                # print(f"GPU Utilization: {gpu_usage()}%")
-                print(f"Error: {error}")
-                print()
-
-            if error < self.epsilon:
-                break
-        
-        if self.mode_full:
-            result = t.zeros(d1, d2, device=self.device)
-            values = FloatTensor(indices, values, self.tensor.size()).to_dense()
-            result = self.latent_1[:, None] + values + self.latent_2[None, :]
-            return result
-        else:
-            return self.latent_1, self.latent_2
-
-
 class SparseUC:
     def __init__(self, device, tensor, epsilon, mode_full=True):
         self.device = device

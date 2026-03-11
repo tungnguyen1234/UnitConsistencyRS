@@ -1,10 +1,10 @@
 """
 Standard Ranking Evaluation for UC (Unit Consistency).
 
-Evaluates UC and TC on Precision@k, Recall@k, and NDCG@k using a standard
+Evaluates UC on Precision@k, Recall@k, and NDCG@k using a standard
 80/20 per-user random train/test split and full-ranking protocol.
 
-Only UC/TC methods are evaluated here. Baseline methods were run using
+Only UC method are evaluated here. Baseline methods were run using
 RecBole; hyperparameter configurations are reported in Tables 15-18 of
 the paper.
 """
@@ -19,7 +19,7 @@ from scipy import sparse
 import pandas as pd
 import json
 
-# Ensure repo root is on path so UCTC_sparse is importable
+# Ensure repo root is on path so UC_sparse is importable
 _repo_root = os.path.dirname(os.path.dirname(__file__))
 if _repo_root not in sys.path:
     sys.path.insert(0, _repo_root)
@@ -28,7 +28,7 @@ from .preprocessing import standard_train_test_split
 from .metric import calculate_ranking_metrics, calculate_global_kendall_tau
 from .lazy_candidates import LazyCandidateGenerator
 
-from UCTC_sparse import SparseUC, SparseTC
+from UC_sparse import SparseUC
 
 
 # ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ from UCTC_sparse import SparseUC, SparseTC
 
 class LazyUCPredictions:
     """
-    Wraps UC/TC latent factors so predictions are computed on demand
+    Wraps UC latent factors so predictions are computed on demand
     rather than materialising a full n_items × n_users matrix.
     """
 
@@ -62,10 +62,10 @@ class LazyUCPredictions:
 
 def get_full_predictions_uc(model_type, train_matrix, device, epsilon=1e-9):
     """
-    Compute UC/TC latent factors and return a LazyUCPredictions object.
+    Compute UC latent factors and return a LazyUCPredictions object.
 
     Args:
-        model_type: 'UC' or 'TC'
+        model_type: 'UC'
         train_matrix: scipy sparse matrix (n_items, n_users)
         device: torch device
         epsilon: numerical stability constant
@@ -87,9 +87,6 @@ def get_full_predictions_uc(model_type, train_matrix, device, epsilon=1e-9):
     if model_type == 'UC':
         model = SparseUC(device, train_tensor, epsilon, mode_full=False)
         latent_1, latent_2 = model.UC()
-    elif model_type == 'TC':
-        model = SparseTC(device, train_tensor, epsilon, mode_full=False)
-        latent_1, latent_2 = model.TC()
     else:
         raise ValueError(f"Unknown model_type: {model_type}")
 
@@ -125,7 +122,7 @@ def run_uc_ranking_evaluation(
     test_ratio=0.2,
 ):
     """
-    Evaluate UC and TC on standard ranking metrics.
+    Evaluate UC on standard ranking metrics.
 
     Args:
         dataset_name: e.g. 'ML-1M'
