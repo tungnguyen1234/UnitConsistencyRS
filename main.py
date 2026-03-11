@@ -183,7 +183,7 @@ def run_ranking(dataset, data_path, seed, output_dir, logger):
     run_uc_ranking_evaluation(
         dataset_name=dataset,
         ratings=ratings,
-        methods=['UC', 'TC'],
+        methods=['UC'],
         k_values=[5, 10, 20],
         random_state=seed,
         logger=logger,

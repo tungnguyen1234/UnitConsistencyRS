@@ -28,7 +28,7 @@ from .preprocessing import standard_train_test_split
 from .metric import calculate_ranking_metrics, calculate_global_kendall_tau
 from .lazy_candidates import LazyCandidateGenerator
 
-from UCTC_sparse import SparseUC, SparseTC
+from UCTC_sparse import SparseUC
 
 
 # ---------------------------------------------------------------------------
