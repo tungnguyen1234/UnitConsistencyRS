@@ -65,7 +65,7 @@ for seed in 0 42 123 456 789; do
 done
 ```
 
-### `ranking` — Standard Ranking Evaluation (P@k, R@k, NDCG@k)
+### `ranking` — Standard Ranking Evaluation (P@k, R@k, NDCG@k, Kendall-τ)
 
 Ratings ≥ 4.0 as positive, 80/20 per-user random split, full-ranking protocol:
 
