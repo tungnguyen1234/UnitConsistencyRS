@@ -342,9 +342,8 @@ def train_test_split(start_rating, long_tail_ratings, ratings, mode="easy"):
     del user_indices, movie_indices
 
     if mode == "easy":
-        return (training_ratings, test_ratings,
-                np.array(training_matrix.todense()),
+        return (np.array(training_matrix.todense()),
                 np.array(test_matrix.todense()),
                 samples_products)
     else:  # "hard"
-        return training_ratings, test_ratings, training_matrix, test_matrix, samples_products
+        return training_matrix, test_matrix, samples_products

@@ -100,7 +100,7 @@ def run_strong_and_subtle(dataset, data_path, seed, output_dir, logger):
     os.makedirs(os.path.join(output_dir, dataset), exist_ok=True)
 
     if dataset in EASY_SETS:
-        n_m, n_u, train_r, train_m = load_matrix(dataset, data_path, seed)
+        train_r = load_matrix(dataset, data_path, seed)
         train_r = get_users_from_indices(train_r, [1, 2, 3, 4, 5])
         for ratings in [[1, 5], [4, 5]]:
             train_r_curr, train_r_N, train_m_N, samples_products = \
@@ -117,7 +117,7 @@ def run_strong_and_subtle(dataset, data_path, seed, output_dir, logger):
             gc.collect(); torch.cuda.empty_cache()
 
     else:
-        n_m, n_u, train_r, train_m = load_matrix(dataset, data_path, seed)
+        train_r = load_matrix(dataset, data_path, seed)
         train_r_sp = sparse.csr_matrix(train_r) if not sparse.issparse(train_r) else train_r
         train_r_sp = get_users_from_indices_sparse(train_r_sp, [1, 2, 3, 4, 5])
         for ratings in [[1, 5], [4, 5]]:
@@ -152,8 +152,7 @@ def run_long_tail(dataset, data_path, seed, output_dir, logger):
     for start_rating in [1, 4]:
         pairs = [start_rating, 5]
         logger.log(f"[long_tail] Pair: {pairs}")
-        training_ratings, test_ratings, train_r, test_r, samples_products = \
-            train_test_split(start_rating, long_tail_ratings, ratings, mode=mode)
+        train_r, test_r, samples_products = train_test_split(start_rating, long_tail_ratings, ratings, mode=mode)
         n_m, n_u = train_r.shape
 
         if mode == "easy":
