@@ -286,12 +286,8 @@ def train_test_split(start_rating, long_tail_ratings, ratings, mode="easy"):
     ratings_i = test_candidates_shuffled[test_candidates_shuffled['Rating'] == start_rating]
     ratings_5 = test_candidates_shuffled[test_candidates_shuffled['Rating'] == 5]
 
-    ratings_i_sampled = (
-        ratings_i.groupby('UserID', group_keys=False).apply(lambda x: x.sample(1)).reset_index(drop=True)
-    )
-    ratings_5_sampled = (
-        ratings_5.groupby('UserID', group_keys=False).apply(lambda x: x.sample(1)).reset_index(drop=True)
-    )
+    ratings_i_sampled = ratings_i.groupby('UserID').sample(n=1).reset_index(drop=True)
+    ratings_5_sampled = ratings_5.groupby('UserID').sample(n=1).reset_index(drop=True)
     test_ratings = pd.concat([ratings_i_sampled, ratings_5_sampled])
 
     test_ratings['UserID_MovieID'] = (
