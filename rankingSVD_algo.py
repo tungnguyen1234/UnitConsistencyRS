@@ -1,7 +1,5 @@
 import torch as t
 import gc
-import numpy as np
-from sklearn.utils.extmath import randomized_svd
 
 class rankingSVD():
     def __init__(self, rows, cols):

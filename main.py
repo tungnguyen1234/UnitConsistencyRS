@@ -125,7 +125,7 @@ def run_strong_and_subtle(dataset, data_path, seed, output_dir, logger):
                 sample_products_all_users_by_indices_sparse(train_r_sp, ratings)
             n_m2, n_u2 = train_r_curr.shape
             test_r = train_r_curr - train_r_N
-            result = run_UC_TC_hard(n_u2, train_r_N, test_r, samples_products, device)
+            result = run_UC_hard(n_u2, train_r_N, test_r, samples_products, device)
             path = os.path.join(output_dir, dataset,
                                 f'strong_and_subtle_{ratings}_{dataset}_seed{seed}_UC.json')
             save_data(path, result)

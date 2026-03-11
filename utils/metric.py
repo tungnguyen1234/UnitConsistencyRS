@@ -2,17 +2,9 @@
 import numpy as np
 from time import time
 from scipy import sparse
-from scipy.stats import kendalltau
 
 
 test_values = np.array([1.0, 1.0])
-
-def kendall_tau_distance_scipy(values1, values2):
-    n = len(values1)
-    assert len(values2) == n, "Both lists have to be of equal length"
-    tau, p_value = kendalltau(values1, values2)
-    normalized_distance = 1 - (tau + 1) / 2
-    return normalized_distance
 
 
 def kendall_tau_distance_two_elements(ground_truth, prediction):
@@ -116,11 +108,6 @@ def calculate_scores_vectorized(n_u, test_r, samples_products, method=None, batc
             print(f'Kendall tau calculation for batch {batch_start} in {time() - tic:.2f} seconds')
 
     return macro_scores
-
-
-def get_mean(arr):
-  arr1 = np.array([a[0] for a in arr])
-  return np.mean(arr1), np.std(arr1)
 
 def norm_kendall_tau(values1, values2):
     """Compute the normalized Kendall tau distance."""

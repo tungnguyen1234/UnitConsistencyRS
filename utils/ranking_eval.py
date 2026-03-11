@@ -225,7 +225,7 @@ def run_uc_ranking_evaluation(
             if compute_uc_metrics:
                 logger.log(f"[{method}] Computing Kendall-tau...")
                 tau_result = calculate_global_kendall_tau(
-                    train_matrix, test_matrix, predictions, min_common_users=5
+                    train_matrix, test_matrix, predictions
                 )
                 results[method]['kendall_tau'] = tau_result['global_tau']
                 logger.log(f"[{method}] Kendall-tau: {tau_result['global_tau']:.4f}")

@@ -117,8 +117,8 @@ def load_big_data_ML_20M(path='./', seed=1234):
 
 def load_data_100k(path='./', delimiter='\t'):
 
-    train = np.loadtxt(path+'movielens_100k_u1.base', skiprows=0, delimiter=delimiter).astype('int32')
-    test = np.loadtxt(path+'movielens_100k_u1.test', skiprows=0, delimiter=delimiter).astype('int32')
+    train = np.loadtxt(os.path.join(path, 'movielens_100k_u1.base'), skiprows=0, delimiter=delimiter).astype('int32')
+    test = np.loadtxt(os.path.join(path, 'movielens_100k_u1.test'), skiprows=0, delimiter=delimiter).astype('int32')
     total = np.concatenate((train, test), axis=0)
 
     n_u = np.unique(total[:,0]).size  # num of users
@@ -146,8 +146,8 @@ def load_data_100k(path='./', delimiter='\t'):
 
 def load_data_100k_train_test(path='./', delimiter='\t'):
 
-    train = np.loadtxt(path+'movielens_100k_u1.base', skiprows=0, delimiter=delimiter).astype('int32')
-    test = np.loadtxt(path+'movielens_100k_u1.test', skiprows=0, delimiter=delimiter).astype('int32')
+    train = np.loadtxt(os.path.join(path, 'movielens_100k_u1.base'), skiprows=0, delimiter=delimiter).astype('int32')
+    test = np.loadtxt(os.path.join(path, 'movielens_100k_u1.test'), skiprows=0, delimiter=delimiter).astype('int32')
     total = np.concatenate((train, test), axis=0)
 
     n_u = np.unique(total[:,0]).size  # num of users
@@ -180,7 +180,7 @@ def load_data_100k_train_test(path='./', delimiter='\t'):
 def load_data_1m(path='./', delimiter='::', seed=1234):
     tic = time()
     print('reading data...')
-    data = np.genfromtxt(path+'movielens_1m_dataset.dat', delimiter=delimiter)
+    data = np.genfromtxt(os.path.join(path, 'movielens_1m_dataset.dat'), delimiter=delimiter)
     print('taken', time() - tic, 'seconds')
 
     n_u = np.unique(data[:,0]).size  # num of users
@@ -219,7 +219,7 @@ def load_data_1m_train_test(path='./', delimiter='::', frac=0.1, seed=1234):
 
     tic = time()
     print('reading data...')
-    data = np.genfromtxt(path+'movielens_1m_dataset.dat', delimiter=delimiter)
+    data = np.genfromtxt(os.path.join(path, 'movielens_1m_dataset.dat'), delimiter=delimiter)
     print('taken', time() - tic, 'seconds')
 
     n_u = np.unique(data[:,0]).size  # num of users
@@ -282,7 +282,7 @@ def load_matlab_file(path_file, name_field):
 
 def load_data_monti(path='./'):
     # Load the 'M' matrix and 'Otraining' matrix from the MATLAB file
-    M = load_matlab_file(path+'douban_monti_dataset.mat', 'M')
+    M = load_matlab_file(os.path.join(path, 'douban_monti_dataset.mat'), 'M')
 
     # Calculate the number of users and movies from the 'M' matrix
     n_u = M.shape[0]  # num of users
@@ -307,9 +307,9 @@ def load_data_monti(path='./'):
 
 def load_data_monti_train_test(path='./'):
 
-    M = load_matlab_file(path+'douban_monti_dataset.mat', 'M')
-    Otraining = load_matlab_file(path+'douban_monti_dataset.mat', 'Otraining') * M
-    Otest = load_matlab_file(path+'douban_monti_dataset.mat', 'Otest') * M
+    M = load_matlab_file(os.path.join(path, 'douban_monti_dataset.mat'), 'M')
+    Otraining = load_matlab_file(os.path.join(path, 'douban_monti_dataset.mat'), 'Otraining') * M
+    Otest = load_matlab_file(os.path.join(path, 'douban_monti_dataset.mat'), 'Otest') * M
 
     n_u = M.shape[0]  # num of users
     n_m = M.shape[1]  # num of movies
