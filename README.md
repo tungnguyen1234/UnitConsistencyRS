@@ -65,9 +65,9 @@ for seed in 0 42 123 456 789; do
 done
 ```
 
-### `ranking` — Standard Ranking Evaluation (P@k, R@k, NDCG@k, Kendall-τ)
+### `ranking` — Standard Ranking Evaluation (P@k, R@k, NDCG@k, Kendall-K)
 
-Ratings ≥ 4.0 as positive, 80/20 per-user random split, full-ranking protocol:
+Ratings ≥ 4.0 as positive, 80/20 per-user random split, full-ranking protocol. Kendall-K = Q / (P + Q) is reported as a comparison metric, where Q is the number of discordant pairs and P is the number of concordant pairs (lower is better):
 
 ```bash
 python main.py --dataset ML-1M  --seed 42 --experiment ranking
