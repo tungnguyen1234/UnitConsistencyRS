@@ -49,9 +49,12 @@ class LazyUCPredictions:
 
     def __getitem__(self, key):
         if isinstance(key, (int, np.integer)):
-            # Single user: return item scores
+            # Single user: return all item scores
             return self.item_factors * self.user_factors[key]
-        raise NotImplementedError("Only single-user indexing is supported.")
+        if isinstance(key, tuple) and len(key) == 2:
+            user, items = key
+            return self.item_factors[items] * self.user_factors[user]
+        raise NotImplementedError("Only single-user or (user, items) indexing is supported.")
 
     def get_user_scores(self, user_idx):
         return self.item_factors * self.user_factors[user_idx]
@@ -127,7 +130,7 @@ def run_uc_ranking_evaluation(
     Args:
         dataset_name: e.g. 'ML-1M'
         ratings: pd.DataFrame with columns [UserID, MovieID, Rating]
-        methods: list, subset of ['UC', 'TC'] (default: ['UC', 'TC'])
+        methods: list, subset of ['UC'] (default: ['UC'])
         k_values: list of k values (default: [5, 10, 20])
         device: torch device (auto-detect if None)
         random_state: random seed
@@ -143,7 +146,7 @@ def run_uc_ranking_evaluation(
         dict: per-method results
     """
     if methods is None:
-        methods = ['UC', 'TC']
+        methods = ['UC']
     if k_values is None:
         k_values = [5, 10, 20]
     if device is None:
