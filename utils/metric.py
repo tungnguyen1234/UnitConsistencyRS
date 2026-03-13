@@ -2,18 +2,6 @@
 import numpy as np
 from time import time
 from scipy import sparse
-from scipy.stats import kendalltau
-
-
-test_values = np.array([1.0, 1.0])
-
-def kendall_tau_distance_scipy(values1, values2):
-    n = len(values1)
-    assert len(values2) == n, "Both lists have to be of equal length"
-    tau, p_value = kendalltau(values1, values2)
-    normalized_distance = 1 - (tau + 1) / 2
-    return normalized_distance
-
 
 def kendall_tau_distance_two_elements(ground_truth, prediction):
     """
@@ -49,7 +37,7 @@ def calculate_scores_vectorized(n_u, test_r, samples_products, method=None, batc
         latent_1 (np.ndarray): Latent factors for users.
         latent_2 (np.ndarray): Latent factors for items.
         samples_products (list of lists or np.ndarray): List of product samples for each user.
-        method (str, optional): Method for calculating predictions ('TC' or 'UC'). Defaults to None.
+        method (str, optional): Method for calculating predictions ('UC'). Defaults to None.
         batch_size (int, optional): Number of users to process per batch. Defaults to 1000.
     
     Returns:
@@ -86,17 +74,13 @@ def calculate_scores_vectorized(n_u, test_r, samples_products, method=None, batc
                 test_r_N = test_r[user, samples_products_np]
 
             # Compute predictions based on the selected method
-            if method == "TC":
-                # pre_N = latent_1[user] + latent_2[samples_products_np]
-                pre_N = test_values
-            elif method == "UC":
-                # pre_N = latent_1[user] * latent_2[samples_products_np]
-                pre_N = test_values
+            if method == "UC":
+                pre_N = latent_1[user] * latent_2[samples_products_np]
             elif method == "rankSVD":
                 pre_N = (r_train[user] @ Q_side_result)
                 pre_N = pre_N[samples_products_np].detach().cpu().to_dense()
             else:
-                raise ValueError("Method must be 'TC' or 'UC'.")
+                raise ValueError("Method must be 'UC'.")
 
             # Store in batch arrays
             test_r_batch[i] = test_r_N
@@ -119,11 +103,6 @@ def calculate_scores_vectorized(n_u, test_r, samples_products, method=None, batc
             print(f'Kendall tau calculation for batch {batch_start} in {time() - tic:.2f} seconds')
 
     return macro_scores
-
-
-def get_mean(arr):
-  arr1 = np.array([a[0] for a in arr])
-  return np.mean(arr1), np.std(arr1)
 
 def norm_kendall_tau(values1, values2):
     """Compute the normalized Kendall tau distance."""
@@ -162,7 +141,7 @@ def calculate_bootstrap_stats(scores, n_bootstrap=1000):
         'ci_upper': np.percentile(bootstrap_means, 97.5)
     }
 
-def calculate_scores_UCTC(n_u, test_r, latent_1, latent_2, samples_products, method=None):
+def calculate_scores_UC(n_u, test_r, latent_1, latent_2, samples_products, method=None):
     macro_scores = []
     count = 0
     dis_count = 0
@@ -178,12 +157,9 @@ def calculate_scores_UCTC(n_u, test_r, latent_1, latent_2, samples_products, met
             test_r_N = test_r[user, samples_products_np].toarray().flatten()
         else:  # dense numpy array
             test_r_N = test_r[user, samples_products_np]
-        if method == "TC":
-            # pre_N = (latent_1[user, None] + latent_2[None, samples_products_np]).flatten()
-            pre_N = test_values
-        elif method == "UC":
-            # pre_N = (latent_1[user, None] * latent_2[None, samples_products_np]).flatten()
-            pre_N = test_values
+        
+        if method == "UC":
+            pre_N = (latent_1[user, None] * latent_2[None, samples_products_np]).flatten()
 
         if pre_N[0] == pre_N[1]:
             count += 1
@@ -237,7 +213,7 @@ def calculate_ranking_metrics(n_u, test_r, predictions, samples_products, k_valu
         n_u (int): Number of users.
         test_r (scipy.sparse.csr_matrix or np.ndarray): Test matrix of shape (n_r, n_u) or (n_u, n_r).
         predictions (np.ndarray or dict): Either:
-            - Full prediction matrix of shape (n_u, n_r) [for UC/TC/BPR-MF]
+            - Full prediction matrix of shape (n_u, n_r) [for UC/BPR-MF]
             - Dict with {user_id: {'items': [item_ids], 'scores': [scores]}} [for RecBole]
         samples_products (dict): Dictionary mapping user_id to list of item indices to evaluate.
         k_values (list): List of k values for top-k evaluation (e.g., [10, 20]).
@@ -294,7 +270,7 @@ def calculate_ranking_metrics(n_u, test_r, predictions, samples_products, k_valu
                 else:
                     test_r_user = test_r[:, user].flatten()
             else:
-                # Matrix format (UC/TC/BPR-MF)
+                # Matrix format (UC/BPR-MF)
                 items = np.array(samples_products[user])
                 scores = predictions[user, items]
 

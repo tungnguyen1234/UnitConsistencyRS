@@ -14,7 +14,6 @@ Download the data from the link above and place it under `data/` so the structur
 
 ```
 data/
-  ML-100K/
   ML-1M/
   ML-20M/
   Douban_monti/
@@ -34,7 +33,7 @@ data/
 All experiments are launched through `main.py`:
 
 ```bash
-python main.py --dataset DATASET --seed SEED --experiment EXP [--output_dir DIR] [--data_path PATH]
+python3 main.py --dataset DATASET --seed SEED --experiment EXP [--output_dir DIR] [--data_path PATH]
 ```
 
 | Argument | Default | Options | Description |
@@ -50,9 +49,7 @@ python main.py --dataset DATASET --seed SEED --experiment EXP [--output_dir DIR]
 UC evaluated on all items for strong (1 vs 5) and subtle (4 vs 5) preference pairs:
 
 ```bash
-for seed in 0 42 123 456 789 1000 2000 3000 4000 5000; do
-  python main.py --dataset ML-1M --seed $seed --experiment strong_and_subtle
-done
+python3 main.py --dataset ML-1M --seed 0 --experiment strong_and_subtle
 ```
 
 ### `long_tail` — Long-Tail Rank-Preference Consistency
@@ -60,18 +57,15 @@ done
 UC evaluated on the least-frequently rated 67% of items, same preference pairs:
 
 ```bash
-for seed in 0 42 123 456 789; do
-  python main.py --dataset Netflix --seed $seed --experiment long_tail
-done
+python3 main.py --dataset Netflix --seed 0 --experiment long_tail
 ```
 
-### `ranking` — Standard Ranking Evaluation (P@k, R@k, NDCG@k)
+### `ranking` — Standard Ranking Evaluation (P@k, R@k, NDCG@k, Kendall-K)
 
-Ratings ≥ 4.0 as positive, 80/20 per-user random split, full-ranking protocol:
+Ratings ≥ 4.0 as positive, 80/20 per-user random split, full-ranking protocol. Kendall-K = Q / (P + Q) is reported as a comparison metric, where Q is the number of discordant pairs and P is the number of concordant pairs (lower is better):
 
 ```bash
-python main.py --dataset ML-1M  --seed 42 --experiment ranking
-python main.py --dataset ML-20M --seed 0  --experiment ranking
+python3 main.py --dataset ML-1M --seed 0 --experiment ranking
 ```
 
 Results are saved to `results/{dataset}_ranking_results/summary_seed_{seed}.csv`.
@@ -102,24 +96,10 @@ Output plots are saved to `results/experiment_1/`:
 - `experiment_1_{dataset}_sidebyside.png`
 
 ## Requirements
-
+They are in `requirements.txt`, including:
 - Python 3.8+
 - PyTorch (with optional CUDA)
 - NumPy, SciPy, Pandas, Matplotlib, scikit-learn, h5py
-
-```bash
-pip install torch numpy scipy pandas matplotlib scikit-learn h5py
-```
-
-## Troubleshooting
-
-**Out of GPU memory:** For ML-20M or Netflix, reduce batch sizes or switch to a CPU run by setting `CUDA_VISIBLE_DEVICES=""`.
-
-**`paths.json` not found:** Either create a `paths.json` file:
-```json
-{ "data_path": "/path/to/your/data" }
-```
-or pass `--data_path /path/to/your/data` directly on the command line.
 
 ## Citation
 

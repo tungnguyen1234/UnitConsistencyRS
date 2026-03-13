@@ -15,14 +15,14 @@ from .dataloader import *
 from .metric import (
     calculate_macro_stats,
     calculate_bootstrap_stats,
-    calculate_scores_UCTC,
+    calculate_scores_UC,
     calculate_scores,
     calculate_scores_vectorized,
 )
 from .preprocessing import *
 
 # ---------------------------------------------------------------------------
-# Algorithm imports — UCTC_sparse.py lives at the repository root
+# Algorithm imports — UC_sparse.py lives at the repository root
 # ---------------------------------------------------------------------------
 _repo_root = os.path.dirname(os.path.dirname(__file__))
 if _repo_root not in sys.path:
@@ -30,31 +30,15 @@ if _repo_root not in sys.path:
 
 import torch
 import torch as t
-from UCTC_sparse import SparseUC, SparseTC
+from UC_sparse import SparseUC
 from rankingSVD_algo import rankingSVD
 
 
 # ---------------------------------------------------------------------------
-# UC / TC Model Runners
+# UC Model Runners
 # ---------------------------------------------------------------------------
 
 def run_UC_hard(n_u, r_train, test_r, samples_products, device, epsilon=1e-9):
-    UC = SparseUC(device, r_train, epsilon, mode_full=False)
-    latent_1_UC, latent_2_UC = UC.UC()
-    latent_1_UC = latent_1_UC.float().cpu().detach().numpy()
-    latent_2_UC = latent_2_UC.float().cpu().detach().numpy()
-
-    macro_scores = calculate_scores_vectorized(
-        n_u, test_r.T, samples_products, method="UC",
-        latent_1=latent_1_UC, latent_2=latent_2_UC
-    )
-    return {
-        'normal_macro': calculate_macro_stats(macro_scores),
-        'bootstrap_macro': calculate_bootstrap_stats(macro_scores)
-    }
-
-
-def run_UC_TC_hard(n_u, r_train, test_r, samples_products, device, epsilon=1e-9):
     if sparse.issparse(r_train):
         coo = r_train.tocoo().T
         i = torch.LongTensor(np.vstack((coo.row, coo.col)))
@@ -66,10 +50,24 @@ def run_UC_TC_hard(n_u, r_train, test_r, samples_products, device, epsilon=1e-9)
         v = torch.FloatTensor(coo.data)
         r_train = torch.sparse_coo_tensor(i, v, torch.Size(coo.shape)).to(device)
 
-    UC_hard = run_UC_hard(n_u, r_train, test_r, samples_products, device, epsilon)
+    UC = SparseUC(device, r_train, epsilon, mode_full=False)
+    latent_1_UC, latent_2_UC = UC.UC()
+    latent_1_UC = latent_1_UC.float().cpu().detach().numpy()
+    latent_2_UC = latent_2_UC.float().cpu().detach().numpy()
+
+    macro_scores = calculate_scores_vectorized(
+        n_u, test_r.T, samples_products, method="UC",
+        latent_1=latent_1_UC, latent_2=latent_2_UC
+    )
+
     gc.collect()
     torch.cuda.empty_cache()
-    return {'UC': UC_hard}
+    return {
+        'UC': {
+            'normal_macro': calculate_macro_stats(macro_scores),
+            'bootstrap_macro': calculate_bootstrap_stats(macro_scores)
+        }
+    }
 
 
 def run_UC_easy(n_u, r_train, test_r, samples_products, device, epsilon=1e-9):
@@ -78,18 +76,15 @@ def run_UC_easy(n_u, r_train, test_r, samples_products, device, epsilon=1e-9):
     latent_1_UC, latent_2_UC = UC.UC()
     latent_1_UC = latent_1_UC.float().cpu().detach().numpy()
     latent_2_UC = latent_2_UC.float().cpu().detach().numpy()
-
-    macro_scores = calculate_scores_UCTC(
+    macro_scores = calculate_scores_UC(
         n_u, test_r.T, latent_1_UC, latent_2_UC, samples_products, method='UC'
     )
     return {
-        'normal_macro': calculate_macro_stats(macro_scores),
-        'bootstrap_macro': calculate_bootstrap_stats(macro_scores),
+        'UC': {
+            'normal_macro': calculate_macro_stats(macro_scores),
+            'bootstrap_macro': calculate_bootstrap_stats(macro_scores),
+        }
     }
-
-
-def run_UC_TC_easy(n_u, r_train, test_r, samples_products, device, epsilon=1e-9):
-    return {'UC': run_UC_easy(n_u, r_train, test_r, samples_products, device, epsilon)}
 
 
 def run_SVD_ranking_easy(n_u, n_m, r_train, test_r, percents, samples_products, n_bootstrap=1000):
@@ -108,7 +103,7 @@ def run_SVD_ranking_easy(n_u, n_m, r_train, test_r, percents, samples_products, 
     return hash_SVD
 
 
-def run_SVD_ranking_hard(n_u, n_m, r_train, test_r, percents, samples_products, n_bootstrap=1000):
+def run_SVD_ranking_hard(n_u, n_m, r_train, test_r, percents, samples_products, device, n_bootstrap=1000):
     if sparse.issparse(r_train):
         coo = r_train.tocoo().T
         i = torch.LongTensor(np.vstack((coo.row, coo.col)))
@@ -290,12 +285,8 @@ def train_test_split(start_rating, long_tail_ratings, ratings, mode="easy"):
     ratings_i = test_candidates_shuffled[test_candidates_shuffled['Rating'] == start_rating]
     ratings_5 = test_candidates_shuffled[test_candidates_shuffled['Rating'] == 5]
 
-    ratings_i_sampled = (
-        ratings_i.groupby('UserID').apply(lambda x: x.sample(1)).reset_index(drop=True)
-    )
-    ratings_5_sampled = (
-        ratings_5.groupby('UserID').apply(lambda x: x.sample(1)).reset_index(drop=True)
-    )
+    ratings_i_sampled = ratings_i.groupby('UserID').sample(n=1).reset_index(drop=True)
+    ratings_5_sampled = ratings_5.groupby('UserID').sample(n=1).reset_index(drop=True)
     test_ratings = pd.concat([ratings_i_sampled, ratings_5_sampled])
 
     test_ratings['UserID_MovieID'] = (
@@ -351,9 +342,8 @@ def train_test_split(start_rating, long_tail_ratings, ratings, mode="easy"):
     del user_indices, movie_indices
 
     if mode == "easy":
-        return (training_ratings, test_ratings,
-                np.array(training_matrix.todense()),
+        return (np.array(training_matrix.todense()),
                 np.array(test_matrix.todense()),
                 samples_products)
     else:  # "hard"
-        return training_ratings, test_ratings, training_matrix, test_matrix, samples_products
+        return training_matrix, test_matrix, samples_products

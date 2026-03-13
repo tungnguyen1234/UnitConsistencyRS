@@ -42,7 +42,7 @@ from .metric import (
     calculate_bootstrap_stats,
     norm_kendall_tau,
     calculate_scores,
-    calculate_scores_UCTC,
+    calculate_scores_UC,
 )
 
 # Experiment utilities — data loaders & UC runners
@@ -57,8 +57,8 @@ from .experiment_utils import (
     preprocess_data,
     train_test_split,
     # UC model runners
-    run_UC_TC_easy,
-    run_UC_TC_hard,
+    run_UC_easy,
+    run_UC_hard,
 )
 
 __all__ = [
@@ -85,7 +85,7 @@ __all__ = [
     'calculate_bootstrap_stats',
     'norm_kendall_tau',
     'calculate_scores',
-    'calculate_scores_UCTC',
+    'calculate_scores_UC',
     # Data loaders
     'load_data_ML100K_exp_9',
     'load_data_ML1M_exp_9',
@@ -96,6 +96,6 @@ __all__ = [
     'preprocess_data',
     'train_test_split',
     # UC runners
-    'run_UC_TC_easy',
-    'run_UC_TC_hard',
+    'run_UC_easy',
+    'run_UC_hard',
 ]
